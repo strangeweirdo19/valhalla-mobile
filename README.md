@@ -59,13 +59,6 @@ let package = Package(
 ```
 
 ## Manually Building Valhalla C++
-Clone using commands
-
-```sh
-git clone https://github.com/strangeweirdo19/valhalla-mobile.git
-git clone --recurse-submodules --shallow-submodules https://github.com/organicmaps/organicmaps.git
-cd valhalla-mobile         
-```
 
 Set up VCPKG
 
@@ -75,6 +68,15 @@ doesnt work with the latest version
 git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2024.09.23
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT=`pwd`/vcpkg
+```
+Clone using commands
+
+```sh
+git clone https://github.com/strangeweirdo19/valhalla-mobile.git
+git clone --recurse-submodules --shallow-submodules https://github.com/organicmaps/organicmaps.git
+cd valhalla-mobile
+git submodule update --init --recursive
+
 ```
 
 ### iOS Swift Package
