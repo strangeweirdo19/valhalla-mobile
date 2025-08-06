@@ -59,9 +59,18 @@ let package = Package(
 ```
 
 ## Manually Building Valhalla C++
+Clone using commands
+
+```sh
+git clone https://github.com/Rallista/valhalla-mobile.git
+git clone --recurse-submodules --shallow-submodules https://github.com/organicmaps/organicmaps.git
+cd valhalla-mobile         
+```
 
 Set up VCPKG
 
+Requires CMake Version 3.29.2 
+doesnt work with the latest version
 ```sh
 git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2024.09.23
 ./vcpkg/bootstrap-vcpkg.sh
