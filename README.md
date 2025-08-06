@@ -62,7 +62,7 @@ let package = Package(
 Clone using commands
 
 ```sh
-git clone https://github.com/Rallista/valhalla-mobile.git
+git clone https://github.com/strangeweirdo19/valhalla-mobile.git
 git clone --recurse-submodules --shallow-submodules https://github.com/organicmaps/organicmaps.git
 cd valhalla-mobile         
 ```
