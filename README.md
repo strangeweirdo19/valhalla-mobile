@@ -73,7 +73,7 @@ Clone using commands
 
 ```sh
 git clone https://github.com/strangeweirdo19/valhalla-mobile.git
-git clone --recurse-submodules --shallow-submodules https://github.com/organicmaps/organicmaps.git
+git clone --recurse-submodules --shallow-submodules https://github.com/Rallista/valhalla-mobile
 cd valhalla-mobile
 git submodule update --init --recursive
 
