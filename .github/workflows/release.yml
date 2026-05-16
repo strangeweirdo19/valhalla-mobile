@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14
+    runs-on: macos-15
     strategy:
       matrix:
         arch: ["arm64-ios", "arm64-ios-simulator", "x64-ios-simulator"]
@@ -28,11 +28,11 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "15.4.0"
+          xcode-version: "16.4.0"
 
       - name: Setup VCPKG
         run: |
-          git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2024.09.23
+          git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2025.10.17
           ./vcpkg/bootstrap-vcpkg.sh
           export VCPKG_ROOT=`pwd`/vcpkg
 
@@ -48,14 +48,14 @@ jobs:
 
   create-xcframework-release:
     needs: build-ios
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout Valhalla
         uses: actions/checkout@v4
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "15.4.0"
+          xcode-version: "16.4.0"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -108,6 +108,13 @@ jobs:
           ./vcpkg/bootstrap-vcpkg.sh
           export VCPKG_ROOT=`pwd`/vcpkg
 
+      - name: Setup Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r29
+          add-to-path: false
+
       - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -123,6 +130,7 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: ./gradlew buildValhallaFor-${{ matrix.arch }}
         working-directory: android
 
@@ -161,7 +169,7 @@ jobs:
           retention-days: 1
 
   draft-release:
-    runs-on: macos-14
+    runs-on: macos-15
     needs: create-xcframework-release
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -260,6 +268,13 @@ jobs:
           distribution: "temurin"
           cache: gradle
 
+      - name: Setup Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r29
+          add-to-path: false
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         working-directory: android
@@ -270,5 +285,6 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
         working-directory: android

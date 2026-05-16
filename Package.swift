@@ -11,10 +11,10 @@ var binaryTarget: Target = .binaryTarget(
 )
 
 // CI will replace the nils with the actual values when building a release
-let version: String = "0.1.7"
+let version: String = "0.5.1"
 let binaryURL: String =
     "https://github.com/Rallista/valhalla-mobile/releases/download/\(version)/valhalla-wrapper.xcframework.zip"
-let binaryChecksum: String = "4b3b97dcd5e10f08e32d8517b90b7bd819b9eaf2b4c7493b2de8da89717ad43c"
+let binaryChecksum: String = "0464877f9297ca9462f57c43f5ffa4825c3fed0653300c2de22cd78422d6d560"
 
 if !useLocalBinary {
     binaryTarget = .binaryTarget(
@@ -40,8 +40,9 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/Rallista/valhalla-openapi-models-swift.git", exact: "0.0.4"),
-        .package(url: "https://github.com/UInt2048/Light-Swift-Untar.git", from: "1.0.4"),
+            url: "https://github.com/Rallista/valhalla-openapi-models-swift.git", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/UInt2048/Light-Swift-Untar.git", .upToNextMajor(from: "1.0.4")),
+        .package(url: "https://github.com/apple/swift-docc-plugin", .upToNextMajor(from: "1.0.0")),
     ],
     targets: [
         .target(
@@ -73,5 +74,5 @@ let package = Package(
         ),
     ],
     cLanguageStandard: .gnu17,
-    cxxLanguageStandard: .cxx17
+    cxxLanguageStandard: .cxx20
 )

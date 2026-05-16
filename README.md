@@ -1,5 +1,11 @@
 # Valhalla Mobile
 
+[![Valhalla](https://img.shields.io/badge/Valhalla-3.6.3-blue)](https://github.com/valhalla/valhalla/releases/tag/3.6.3)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FRallista%2Fvalhalla-mobile%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/Rallista/valhalla-mobile)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FRallista%2Fvalhalla-mobile%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/Rallista/valhalla-mobile)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.rallista/valhalla-mobile)](https://central.sonatype.com/artifact/io.github.rallista/valhalla-mobile)
+[![Kotlin Docs](https://img.shields.io/badge/Kotlin%20Dokka-purple?logo=kotlin)](https://rallista.github.io/valhalla-mobile/)
+
 This project builds [valhalla](https://github.com/valhalla/valhalla) as a static iOS or shared Android library.
 
 It currently only exposes the route function for the primary purpose of generating turn by turn navigation routes
@@ -60,12 +66,18 @@ let package = Package(
 
 ## Manually Building Valhalla C++
 
+Fetching submodules
+
+```sh
+git submodule update --init --recursive
+```
+
 Set up VCPKG
 
 Requires CMake Version 3.29.2 
 doesnt work with the latest version
 ```sh
-git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2024.09.23
+git clone https://github.com/microsoft/vcpkg && git -C vcpkg checkout 2025.12.12
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT=`pwd`/vcpkg
 ```
@@ -89,7 +101,10 @@ On iOS, you must pre-build the xcframework using the command:
 
 ### Android
 
-The project's build.gradle.kts includes a build task that automatically runs the script below selectively per achitecture.
+**Prerequisites:** See [development.md](docs/development.md), specifically 
+setting up NDK `29.0.14206865` to match CI.
+
+The project's build.gradle.kts includes a build task that automatically runs the script below selectively per architecture.
 It's also possible to run this manually:
 
 ```sh
