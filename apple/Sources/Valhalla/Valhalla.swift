@@ -56,6 +56,40 @@ public final class Valhalla: ValhallaProviding {
         return try JSONDecoder().decode(RouteResponse.self, from: resultData)
     }
 
+    public struct Structure: Codable, Equatable {
+        public let type: String
+        public let lat: Double
+        public let lon: Double
+        public let take: Bool
+    }
+
+    private struct StructuresEnvelope: Codable {
+        let structures: [Structure]?
+    }
+
+    /// Routes and returns bridge/tunnel structures separately.
+    ///
+    /// The native layer attaches a top-level `structures` array to the JSON response.
+    public func routeWithStructures(request: RouteRequest) throws -> (RouteResponse, [Structure]) {
+        let requestData = try JSONEncoder().encode(request)
+        guard let requestStr = String(data: requestData, encoding: .utf8) else {
+            throw ValhallaError.encodingNotUtf8("requestStr")
+        }
+
+        let resultStr = route(rawRequest: requestStr)
+        guard let resultData = resultStr.data(using: .utf8) else {
+            throw ValhallaError.encodingNotUtf8("resultData")
+        }
+
+        if let error = try? JSONDecoder().decode(ValhallaErrorModel.self, from: resultData) {
+            throw ValhallaError.valhallaError(error.code, error.message)
+        }
+
+        let route = try JSONDecoder().decode(RouteResponse.self, from: resultData)
+        let envelope = try? JSONDecoder().decode(StructuresEnvelope.self, from: resultData)
+        return (route, envelope?.structures ?? [])
+    }
+
     public func route(rawRequest request: String) -> String {
         actor!.route(request)
     }

@@ -90,4 +90,56 @@ class Valhalla(
       }
     }
   }
+
+  data class Structure(
+      val type: String,
+      val lat: Double,
+      val lon: Double,
+      val take: Boolean,
+  )
+
+  private data class StructuresEnvelope(
+      val structures: List<Structure>?,
+  )
+
+  /**
+   * Routes and returns bridge/tunnel structures separately.
+   *
+   * The native layer attaches a top-level `structures` array to the JSON response.
+   */
+  fun routeWithStructures(request: RouteRequest): Pair<ValhallaResponse, List<Structure>> {
+    val encodedRequest = moshi.adapter(RouteRequest::class.java).toJson(request)
+    val rawResponse = valhallaActor.route(encodedRequest)
+
+    // Check for error response in Valhalla format.
+    if (rawResponse.contains("code") and !rawResponse.contains("routes")) {
+      val error = moshi.adapter(ErrorResponse::class.java).fromJson(rawResponse)
+      error?.let { throw ValhallaException.Internal(it) }
+      throw ValhallaException.InvalidError()
+    }
+
+    val structures =
+        moshi.adapter(StructuresEnvelope::class.java).fromJson(rawResponse)?.structures ?: emptyList()
+
+    val routeResponse =
+        when (request.directionsOptions?.format) {
+          DirectionsOptions.Format.gpx -> throw ValhallaException.NotSupported()
+          DirectionsOptions.Format.osrm -> {
+            val osrmResponse =
+                moshi.adapter(OsrmRouteResponse::class.java).fromJson(rawResponse)
+                    ?: throw ValhallaException.InvalidResponse()
+            ValhallaResponse.Osrm(osrmResponse)
+          }
+
+          DirectionsOptions.Format.pbf -> throw ValhallaException.NotSupported()
+          else -> {
+            val valhallaResponse =
+                moshi.adapter(RouteResponse::class.java).fromJson(rawResponse)
+                    ?: throw ValhallaException.InvalidResponse()
+            ValhallaResponse.Json(valhallaResponse)
+          }
+        }
+
+    return Pair(routeResponse, structures)
+  }
 }

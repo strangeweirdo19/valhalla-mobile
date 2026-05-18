@@ -152,6 +152,7 @@ public:
 - (NSString*)route:(NSString*)request
 {
     @synchronized(self) {
+        NSLog(@"[ValhallaWrapper] 🚀 route called - Native C++ Structures Extraction is ACTIVE!");
         // Convert the NSString to std::string
         std::string req = std::string([request UTF8String]);
         

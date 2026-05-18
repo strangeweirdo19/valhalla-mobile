@@ -100,6 +100,15 @@ do {
 }
 ``` 
 
+The native layer also attaches a top-level `structures` array to the JSON response, containing
+bridge and tunnel locations near the route geometry and a `take` flag indicating whether the
+structure is on the returned route.
+
+```swift
+let (route, structures) = try valhalla.routeWithStructures(request: request)
+print("Structures: \(structures.count)")
+```
+
 ## Topics
 
 ### Essentials

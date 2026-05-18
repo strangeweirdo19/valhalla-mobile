@@ -1,8 +1,11 @@
 // swift-tools-version:5.8
 import PackageDescription
+import Foundation
 
-// Use the local binary if true
-let useLocalBinary = Context.environment["VALHALLA_MOBILE_DEV"].flatMap(Bool.init) ?? false
+// Use the local binary if the built xcframework is found on disk or if VALHALLA_MOBILE_DEV env is set to true
+let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+let localBinaryExists = FileManager.default.fileExists(atPath: "\(packageDir)/build/apple/valhalla-wrapper.xcframework")
+let useLocalBinary = localBinaryExists || (Context.environment["VALHALLA_MOBILE_DEV"].flatMap(Bool.init) ?? false)
 
 // Use the local binary
 var binaryTarget: Target = .binaryTarget(
@@ -11,7 +14,7 @@ var binaryTarget: Target = .binaryTarget(
 )
 
 // CI will replace the nils with the actual values when building a release
-let version: String = "0.5.1"
+let version: String = "1.0.0"
 let binaryURL: String =
     "https://github.com/Rallista/valhalla-mobile/releases/download/\(version)/valhalla-wrapper.xcframework.zip"
 let binaryChecksum: String = "0464877f9297ca9462f57c43f5ffa4825c3fed0653300c2de22cd78422d6d560"

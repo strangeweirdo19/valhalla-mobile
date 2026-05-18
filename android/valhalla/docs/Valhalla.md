@@ -24,4 +24,7 @@ val request =
 
 // Fetch a route from Valhalla
 val response = valhalla.route(request)
+
+// Fetch a route and get bridge/tunnel structures separately.
+val (route, structures) = valhalla.routeWithStructures(request)
 ```
