@@ -23,9 +23,16 @@ $dokka.location:com.valhalla.valhalla/ErrorResponse/ErrorResponse/#kotlin.Int#ko
 $dokka.location:com.valhalla.valhalla/ErrorResponse/code/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-error-response/code.html
 $dokka.location:com.valhalla.valhalla/ErrorResponse/message/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-error-response/message.html
 $dokka.location:com.valhalla.valhalla/ErrorResponse/toString/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-error-response/to-string.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure///PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/index.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure/Structure/#kotlin.String#kotlin.Double#kotlin.Double#kotlin.Boolean/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/-structure.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure/lat/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/lat.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure/lon/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/lon.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure/take/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/take.html
+$dokka.location:com.valhalla.valhalla/Valhalla.Structure/type/#/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-structure/type.html
 $dokka.location:com.valhalla.valhalla/Valhalla///PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/index.html
 $dokka.location:com.valhalla.valhalla/Valhalla/Valhalla/#android.content.Context#com.valhalla.config.models.ValhallaConfig#com.valhalla.valhalla.config.ValhallaConfigManager#com.squareup.moshi.Moshi/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/-valhalla.html
 $dokka.location:com.valhalla.valhalla/Valhalla/route/#com.valhalla.api.models.RouteRequest/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/route.html
+$dokka.location:com.valhalla.valhalla/Valhalla/routeWithStructures/#com.valhalla.api.models.RouteRequest/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla/route-with-structures.html
 $dokka.location:com.valhalla.valhalla/ValhallaException.Internal///PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla-exception/-internal/index.html
 $dokka.location:com.valhalla.valhalla/ValhallaException.Internal/Internal/#com.valhalla.valhalla.ErrorResponse/PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla-exception/-internal/-internal.html
 $dokka.location:com.valhalla.valhalla/ValhallaException.InvalidError///PointingToDeclaration/-valhalla -mobile/com.valhalla.valhalla/-valhalla-exception/-invalid-error/index.html
