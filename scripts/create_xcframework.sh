@@ -17,6 +17,11 @@ fi
 lipo -create build/apple/arm64-ios-simulator/libvalhalla_all.a build/apple/x64-ios-simulator/libvalhalla_all.a \
     -output build/apple/arm64-x64-ios-simulator/libvalhalla_all.a
 
+# Delete old framework to avoid copy collisions/overwriting errors
+if [ -d "build/apple/valhalla-wrapper.xcframework" ]; then
+    rm -rf build/apple/valhalla-wrapper.xcframework
+fi
+
 xcodebuild -create-xcframework \
     -library build/apple/arm64-ios/libvalhalla_all.a -headers build/apple/arm64-ios/install/include \
     -library build/apple/arm64-x64-ios-simulator/libvalhalla_all.a -headers build/apple/arm64-ios/install/include \

@@ -63,13 +63,19 @@ public final class Valhalla: ValhallaProviding {
         public let take: Bool
     }
 
-    private struct StructuresEnvelope: Codable {
+    private struct TripEnvelope: Codable {
+        struct Trip: Codable {
+            let structures: [Structure]?
+        }
+
+        let trip: Trip?
         let structures: [Structure]?
     }
 
-    /// Routes and returns bridge/tunnel structures separately.
+    /// Routes and returns bridge/tunnel structures from the first alternative separately.
     ///
-    /// The native layer attaches a top-level `structures` array to the JSON response.
+    /// The native layer attaches a `structures` array to each trip in the JSON response.
+    /// This returns the structures from the first (best) alternative.
     public func routeWithStructures(request: RouteRequest) throws -> (RouteResponse, [Structure]) {
         let requestData = try JSONEncoder().encode(request)
         guard let requestStr = String(data: requestData, encoding: .utf8) else {
@@ -86,8 +92,39 @@ public final class Valhalla: ValhallaProviding {
         }
 
         let route = try JSONDecoder().decode(RouteResponse.self, from: resultData)
-        let envelope = try? JSONDecoder().decode(StructuresEnvelope.self, from: resultData)
-        return (route, envelope?.structures ?? [])
+
+        // Extract structures from trip (primary route) or the first alternative if available.
+        var structures: [Structure] = []
+        if let jsonObject = try? JSONSerialization.jsonObject(with: resultData) as? [String: Any] {
+            if let rootStructuresData = try? JSONSerialization.data(withJSONObject: jsonObject),
+               let envelope = try? JSONDecoder().decode(TripEnvelope.self, from: rootStructuresData) {
+                if let tripStructures = envelope.trip?.structures, !tripStructures.isEmpty {
+                    structures = tripStructures
+                } else if let rootStructures = envelope.structures, !rootStructures.isEmpty {
+                    structures = rootStructures
+                }
+            }
+
+            if structures.isEmpty {
+                let altKeys = ["alternates", "alternatives"]
+                for key in altKeys {
+                    if let alternatives = jsonObject[key] as? [[String: Any]],
+                       !alternatives.isEmpty,
+                       let firstAlt = alternatives.first,
+                       let structuresData = try? JSONSerialization.data(withJSONObject: firstAlt),
+                       let envelope = try? JSONDecoder().decode(TripEnvelope.self, from: structuresData) {
+                        if let tripStructures = envelope.trip?.structures, !tripStructures.isEmpty {
+                            structures = tripStructures
+                        } else if let rootStructures = envelope.structures, !rootStructures.isEmpty {
+                            structures = rootStructures
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        return (route, structures) // Always returns array (possibly empty)
     }
 
     public func route(rawRequest request: String) -> String {

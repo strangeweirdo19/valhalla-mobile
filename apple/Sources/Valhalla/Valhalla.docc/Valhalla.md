@@ -100,7 +100,7 @@ do {
 }
 ``` 
 
-The native layer also attaches a top-level `structures` array to the JSON response, containing
+The native layer also attaches a `structures` array to each trip in the JSON response, containing
 bridge and tunnel locations near the route geometry and a `take` flag indicating whether the
 structure is on the returned route.
 

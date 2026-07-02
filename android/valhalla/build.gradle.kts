@@ -5,12 +5,15 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.dokka)
 }
+
+version = "0.1.0"
+group = "io.github.rallista"
 
 android {
     namespace = "com.valhalla.valhalla"

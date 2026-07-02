@@ -71,17 +71,17 @@ class Valhalla(
       throw ValhallaException.InvalidError()
     }
 
-    return when (request.directionsOptions?.format) {
-      DirectionsOptions.Format.gpx -> throw ValhallaException.NotSupported()
-      DirectionsOptions.Format.osrm -> {
+    return when (request.format?.toString()?.lowercase()) {
+      "gpx" -> throw ValhallaException.NotSupported()
+      "osrm" -> {
         val osrmResponse =
             moshi.adapter(OsrmRouteResponse::class.java).fromJson(rawResponse)
                 ?: throw ValhallaException.InvalidResponse()
         ValhallaResponse.Osrm(osrmResponse)
       }
 
-      DirectionsOptions.Format.pbf -> throw ValhallaException.NotSupported()
-      // else includes default valhalla: DirectionsOptions.Format.json
+      "pbf" -> throw ValhallaException.NotSupported()
+      // else includes the default Valhalla JSON response.
       else -> {
         val valhallaResponse =
             moshi.adapter(RouteResponse::class.java).fromJson(rawResponse)
@@ -98,14 +98,20 @@ class Valhalla(
       val take: Boolean,
   )
 
-  private data class StructuresEnvelope(
+  private data class TripEnvelope(
+      val trip: Trip?,
       val structures: List<Structure>?,
-  )
+  ) {
+    data class Trip(
+        val structures: List<Structure>?,
+    )
+  }
 
   /**
-   * Routes and returns bridge/tunnel structures separately.
+   * Routes and returns bridge/tunnel structures from the first alternative separately.
    *
-   * The native layer attaches a top-level `structures` array to the JSON response.
+  * The native layer attaches a `structures` array to each trip in the JSON response.
+   * This returns the structures from the first (best) alternative.
    */
   fun routeWithStructures(request: RouteRequest): Pair<ValhallaResponse, List<Structure>> {
     val encodedRequest = moshi.adapter(RouteRequest::class.java).toJson(request)
@@ -118,20 +124,55 @@ class Valhalla(
       throw ValhallaException.InvalidError()
     }
 
-    val structures =
-        moshi.adapter(StructuresEnvelope::class.java).fromJson(rawResponse)?.structures ?: emptyList()
+    // Extract structures from trip (primary route) or alternatives if available.
+    var structures: List<Structure> = emptyList()
+    try {
+      val json = org.json.JSONObject(rawResponse)
+      val rootEnvelope = moshi.adapter(TripEnvelope::class.java).fromJson(rawResponse)
+      if (rootEnvelope != null) {
+        val tripStructures = rootEnvelope.trip?.structures
+        if (!tripStructures.isNullOrEmpty()) {
+          structures = tripStructures
+        } else {
+          val rootStructures = rootEnvelope.structures
+          if (!rootStructures.isNullOrEmpty()) {
+            structures = rootStructures
+          }
+        }
+      }
+
+      if (structures.isEmpty()) {
+        val altKeys = arrayOf("alternates", "alternatives")
+        for (key in altKeys) {
+          val alternatives = json.optJSONArray(key)
+          if (alternatives != null && alternatives.length() > 0) {
+            val firstAlt = alternatives.getJSONObject(0).toString()
+            val altEnvelope = moshi.adapter(TripEnvelope::class.java).fromJson(firstAlt)
+            val tripStructures = altEnvelope?.trip?.structures
+            structures = if (!tripStructures.isNullOrEmpty()) {
+              tripStructures
+            } else {
+              altEnvelope?.structures ?: emptyList()
+            }
+            break
+          }
+        }
+      }
+    } catch (e: Exception) {
+      // Silently ignore JSON parsing errors, just return empty structures.
+    }
 
     val routeResponse =
-        when (request.directionsOptions?.format) {
-          DirectionsOptions.Format.gpx -> throw ValhallaException.NotSupported()
-          DirectionsOptions.Format.osrm -> {
+        when (request.format?.toString()?.lowercase()) {
+          "gpx" -> throw ValhallaException.NotSupported()
+          "osrm" -> {
             val osrmResponse =
                 moshi.adapter(OsrmRouteResponse::class.java).fromJson(rawResponse)
                     ?: throw ValhallaException.InvalidResponse()
             ValhallaResponse.Osrm(osrmResponse)
           }
 
-          DirectionsOptions.Format.pbf -> throw ValhallaException.NotSupported()
+          "pbf" -> throw ValhallaException.NotSupported()
           else -> {
             val valhallaResponse =
                 moshi.adapter(RouteResponse::class.java).fromJson(rawResponse)
