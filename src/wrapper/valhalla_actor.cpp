@@ -5,6 +5,7 @@
 #include <valhalla/baldr/edgeinfo.h>
 #include <valhalla/baldr/tilehierarchy.h>
 #include <valhalla/midgard/tiles.h>
+#include <valhalla/midgard/encoded.h>
 #include <valhalla/midgard/pointll.h>
 #include <valhalla/loki/worker.h>
 #include "valhalla_actor.h"
@@ -320,7 +321,9 @@ static bool is_crossing_structure(const std::vector<valhalla::midgard::PointLL>&
   return heading_diff_degrees(route_heading, bridge_heading) > kCrossingStructureMinAngleDegrees;
 }
 
-static rapidjson::Value serialize_structures(const std::vector<std::tuple<StructureType, double, double, bool>>& structures,
+using RouteStructure = std::tuple<StructureType, double, double, bool, int, int>;
+
+static rapidjson::Value serialize_structures(const std::vector<RouteStructure>& structures,
                                              rapidjson::Document::AllocatorType& alloc) {
   rapidjson::Value structures_value(rapidjson::kArrayType);
   for (const auto& s : structures) {
@@ -340,6 +343,10 @@ static rapidjson::Value serialize_structures(const std::vector<std::tuple<Struct
     obj.AddMember("lat", lat, alloc);
     obj.AddMember("lon", lon, alloc);
     obj.AddMember("take", take, alloc);
+    if (take) {
+      obj.AddMember("leg_index", std::get<4>(s), alloc);
+      obj.AddMember("shape_index", std::get<5>(s), alloc);
+    }
 
     structures_value.PushBack(obj, alloc);
   }
@@ -380,7 +387,7 @@ static rapidjson::Value serialize_connectors(const std::vector<RouteConnector>& 
 
 // Always parses and re-serialises so "version" is injected on every response.
 static bool add_structures_to_json(std::string& json,
-                                   const std::vector<std::vector<std::tuple<StructureType, double, double, bool>>>&
+                                   const std::vector<std::vector<RouteStructure>>&
                                        all_routes_structures,
                                    const std::vector<std::vector<RouteConnector>>&
                                        all_routes_connectors) {
@@ -455,7 +462,7 @@ static bool add_structures_to_json(std::string& json,
 static void extract_structures(const valhalla::Api& api,
                                valhalla::baldr::GraphReader& reader,
                                size_t route_index,
-                               std::vector<std::tuple<StructureType, double, double, bool>>& out) {
+                               std::vector<RouteStructure>& out) {
   out.clear();
 
   if (api.trip().routes_size() <= route_index) {
@@ -489,8 +496,18 @@ static void extract_structures(const valhalla::Api& api,
   // -- Phase 1: on-route edge/node sets + simplified route polyline ----------
   for (int leg_idx = 0; leg_idx < route.legs_size(); ++leg_idx) {
     const auto& leg = route.legs(leg_idx);
+    const auto leg_shape = valhalla::midgard::decode<std::vector<valhalla::midgard::PointLL>>(leg.shape());
+    bool previous_bridge = false;
+    bool previous_tunnel = false;
     for (int node_idx = 0; node_idx < leg.node_size(); ++node_idx) {
+      if (!leg.node(node_idx).has_edge()) {
+        continue;
+      }
       const auto& trip_edge = leg.node(node_idx).edge();
+      const bool enters_bridge = trip_edge.bridge() && !previous_bridge;
+      const bool enters_tunnel = trip_edge.tunnel() && !previous_tunnel;
+      previous_bridge = trip_edge.bridge();
+      previous_tunnel = trip_edge.tunnel();
       valhalla::baldr::GraphId edge_id;
       try {
         edge_id = valhalla::baldr::GraphId(trip_edge.id());
@@ -517,23 +534,12 @@ static void extract_structures(const valhalla::Api& api,
         const auto& shape = info.shape();
         append_route_shape_simplified(route_shape, shape, trip_edge.forward());
 
-        // Structures actually taken.
-        if (de->bridge() || de->tunnel()) {
-          const auto entry = structure_entry_point(shape, trip_edge.forward());
-          if (!entry.IsValid()) {
-            continue;
-          }
-          if (de->bridge()) {
-            const auto k = seen_key(edge_id.value, StructureType::Bridge, true);
-            if (seen.insert(k).second) {
-              out.emplace_back(StructureType::Bridge, entry.lat(), entry.lng(), true);
-            }
-          }
-          if (de->tunnel()) {
-            const auto k = seen_key(edge_id.value, StructureType::Tunnel, true);
-            if (seen.insert(k).second) {
-              out.emplace_back(StructureType::Tunnel, entry.lat(), entry.lng(), true);
-            }
+        if (enters_bridge || enters_tunnel) {
+          const auto index = trip_edge.begin_shape_index();
+          if (index < leg_shape.size()) {
+            const auto& entry = leg_shape[index];
+            out.emplace_back(enters_tunnel ? StructureType::Tunnel : StructureType::Bridge,
+                             entry.lat(), entry.lng(), true, leg_idx, trip_edge.begin_shape_index());
           }
         }
       } catch (const std::exception& e) {
@@ -614,7 +620,10 @@ static void extract_structures(const valhalla::Api& api,
               continue;
             }
 
-            const bool take = route_edge_ids.find(candidate_edge_id.value) != route_edge_ids.end();
+            if (route_edge_ids.count(candidate_edge_id.value) != 0) {
+              continue;
+            }
+            constexpr bool take = false;
 
             // Node-based connectivity: O(1), no extra tile I/O, level-agnostic.
             const auto cand_nodes = reader.GetDirectedEdgeNodes(candidate_edge_id, edge_tile);
@@ -705,13 +714,13 @@ static void extract_structures(const valhalla::Api& api,
             if (de->bridge()) {
               const auto k = seen_key(candidate_edge_id.value, StructureType::Bridge, take);
               if (seen.insert(k).second) {
-                out.emplace_back(StructureType::Bridge, entry.lat(), entry.lng(), take);
+                out.emplace_back(StructureType::Bridge, entry.lat(), entry.lng(), take, -1, -1);
               }
             }
             if (de->tunnel()) {
               const auto k = seen_key(candidate_edge_id.value, StructureType::Tunnel, take);
               if (seen.insert(k).second) {
-                out.emplace_back(StructureType::Tunnel, entry.lat(), entry.lng(), take);
+                out.emplace_back(StructureType::Tunnel, entry.lat(), entry.lng(), take, -1, -1);
               }
             }
           } catch (const std::exception& e) {
@@ -736,7 +745,7 @@ static void extract_structures(const valhalla::Api& api,
   }
 
   if (!take_by_coord.empty()) {
-    std::vector<std::tuple<StructureType, double, double, bool>> filtered;
+    std::vector<RouteStructure> filtered;
     filtered.reserve(out.size());
     for (const auto& s : out) {
       if (!std::get<3>(s)) {
@@ -1064,11 +1073,11 @@ std::string ValhallaActor::route(const std::string& request) {
   std::string result = actor->route(req, nullptr, &api);
 
   try {
-    std::vector<std::vector<std::tuple<StructureType, double, double, bool>>> all_routes_structures;
+    std::vector<std::vector<RouteStructure>> all_routes_structures;
     std::vector<std::vector<RouteConnector>> all_routes_connectors;
     const size_t num_routes = api.trip().routes_size();
     for (size_t i = 0; i < num_routes; ++i) {
-      std::vector<std::tuple<StructureType, double, double, bool>> route_structs;
+      std::vector<RouteStructure> route_structs;
       extract_structures(api, *graph_reader, i, route_structs);
       all_routes_structures.push_back(std::move(route_structs));
     }
